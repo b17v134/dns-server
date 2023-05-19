@@ -1,12 +1,15 @@
+#![deny(warnings)]
+
 use std::{net::{UdpSocket, SocketAddr}, process::exit};
 use std::thread;
 
 mod message;
 
-fn handle_client(socket_addr: &SocketAddr, len: usize, buf: [u8; 4096]) {
+fn handle_client(_: &SocketAddr, _: usize, buf: [u8; 4096]) {
     println!("buf = {:?}", buf);
-    let message = message::GetMessage(Vec::from(buf.as_slice()));
-    println!("id = {:?}", message.Hdr.id);
+    let message = message::get_message(&Vec::from(buf.as_slice()));
+    println!("id = {:?}", message.hdr.id);
+    println!("{:?}", message.questions[0].qname);
 
 }
 
