@@ -1,13 +1,14 @@
-#![deny(warnings)]
+//#![deny(warnings)]
 
 use std::{net::{UdpSocket, SocketAddr}, process::exit};
 use std::thread;
 
-mod message;
+mod dns;
+use dns::*;
 
 fn handle_client(_: &SocketAddr, _: usize, buf: [u8; 4096]) {
     println!("buf = {:?}", buf);
-    let message = message::get_message(&Vec::from(buf.as_slice()));
+    let message = get_message(&Vec::from(buf.as_slice()));
     println!("id = {:?}", message.hdr.id);
     println!("{:?}", message.questions[0].qname);
 
