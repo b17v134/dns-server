@@ -403,14 +403,14 @@ pub fn get_message(buf: &Vec<u8>) -> Message {
     }
 
     let mut authority_records: Vec<ResourceRecord> = Vec::new();
-    for _ in 0 .. header.ancount {
+    for _ in 0 .. header.nscount {
         let resource_record: ResourceRecord;
         (resource_record, pos) = read_resource_record(&buf, pos);
         authority_records.push(resource_record)
     }
 
     let mut additional_records: Vec<ResourceRecord> = Vec::new();
-    for _ in 0 .. header.ancount {
+    for _ in 0 .. header.arcount {
         let resource_record: ResourceRecord;
         (resource_record, pos) = read_resource_record(&buf, pos);
         additional_records.push(resource_record)
