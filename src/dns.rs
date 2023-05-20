@@ -248,7 +248,7 @@ pub struct ResourceRecord {
 }
 
 pub struct Message {
-    pub hdr: Header,
+    pub header: Header,
     pub questions: Vec<Question>,
     pub answers: Vec<ResourceRecord>,
     pub authority_records: Vec<ResourceRecord>,
@@ -259,23 +259,22 @@ pub struct Message {
     return buf[pos];
 }*/
 
-fn read_u16(buf: &Vec<u8>, pos: usize) -> u16 {
-    return u16::from(buf[pos]) * 0x100 + u16::from(buf[pos+ 1]);
+fn read_u16(buf: &[u8], pos: usize) -> u16 {
+    u16::from(buf[pos]) * 0x100 + u16::from(buf[pos+ 1])
 }
 
-fn read_u32(buf: &Vec<u8>, pos: usize) -> u32 {
-    return 
+fn read_u32(buf: &[u8], pos: usize) -> u32 {
         u32::from(buf[pos]) * 0x1000000 + 
-        u32::from(buf[pos+ 1]) * 0x10000 +
+        u32::from(buf[pos + 1]) * 0x10000 +
         u32::from(buf[pos + 2]) *0x100 + 
-        u32::from(buf[pos + 3]);
+        u32::from(buf[pos + 3])
 }
 
-fn read_header(buf: &Vec<u8>) -> Header {
-    let flags = read_u16(&buf, 2);
+fn read_header(buf: &[u8]) -> Header {
+    let flags = read_u16(buf, 2);
 
-    let header = Header{
-        id: read_u16(&buf, 0),
+    Header{
+        id: read_u16(buf, 0),
         qr: ((flags & (1 << 15)) >> 15) as u8,
         opcode: ((flags & (0xF << 11)) >> 11) as u8,
         aa: ((flags & (1 << 10)) >> 10) as u8,
@@ -285,16 +284,14 @@ fn read_header(buf: &Vec<u8>) -> Header {
         z: ((flags & (0x7 << 4)) >> 4) as u8,
         rcode: (flags & 0xF) as u8,
 
-        qdcount: read_u16(&buf, 4),
-        ancount: read_u16(&buf, 6),
-        nscount: read_u16(&buf, 8),
-        arcount: read_u16(&buf, 10),
-    };
-
-    return header;
+        qdcount: read_u16(buf, 4),
+        ancount: read_u16(buf, 6),
+        nscount: read_u16(buf, 8),
+        arcount: read_u16(buf, 10),
+    }
 }
 
-fn read_qname(buf: &Vec<u8>, pos: usize, qname: &mut String) -> usize {
+fn read_qname(buf: &[u8], pos: usize, qname: &mut String) -> usize {
     let mut max_pos = pos;
     let mut length: u8;
     let mut tmp_pos = pos;
@@ -332,34 +329,35 @@ fn read_qname(buf: &Vec<u8>, pos: usize, qname: &mut String) -> usize {
     if max_pos < tmp_pos {
         max_pos = tmp_pos;
     }
-    return max_pos + 1;
+    
+    max_pos + 1
 }
 
-fn read_question(buf: &Vec<u8>, pos: usize) -> (Question, usize) {
+fn read_question(buf: &[u8], pos: usize) -> (Question, usize) {
     let mut qname = String::new();
     let current_pos = read_qname(buf, pos, &mut qname);
 
     let q = Question{
-        qname: qname,
-        qtype: read_u16(&buf, current_pos),
-        qclass: read_u16(&buf, current_pos+ 2),
+        qname,
+        qtype: read_u16(buf, current_pos),
+        qclass: read_u16(buf, current_pos+ 2),
     };
 
-    return (q, pos + 4);
+    (q, pos + 4)
 }
 
-fn read_ipv4(buf: &Vec<u8>, pos: usize) -> String {
-    return format!(
+fn read_ipv4(buf: &[u8], pos: usize) -> String {
+    format!(
         "{}.{}.{}.{}", 
-        buf[pos].to_string(),
-        buf[pos + 1].to_string(),
-        buf[pos + 2].to_string(),
-        buf[pos + 3].to_string()
-    );
+        buf[pos],
+        buf[pos + 1],
+        buf[pos + 2],
+        buf[pos + 3],
+    )
 }
 
 
-fn read_resource_record(buf: &Vec<u8>, pos: usize) -> (ResourceRecord, usize) {
+fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
     let mut qname = String::new();
     let tmp_current_pos = read_qname(buf, pos, &mut qname);
 
@@ -378,12 +376,13 @@ fn read_resource_record(buf: &Vec<u8>, pos: usize) -> (ResourceRecord, usize) {
         class: read_u16(buf, tmp_current_pos + 3), 
         ttl: read_u32(buf, tmp_current_pos + 5), 
         rdlength: read_u16(buf, tmp_current_pos + 9), 
-        rdata: rdata, 
+        rdata, 
     };
-    return (resource_record, tmp_current_pos);
+
+    (resource_record, tmp_current_pos)
 }
 
-pub fn get_message(buf: &Vec<u8>) -> Message {
+pub fn get_message(buf: &[u8]) -> Message {
     let header = read_header(buf);
 
     let mut pos = 12;
@@ -391,36 +390,36 @@ pub fn get_message(buf: &Vec<u8>) -> Message {
     let mut questions: Vec<Question> = Vec::new();
     for _ in 0 .. header.qdcount {
         let question: Question;
-        (question, pos) = read_question(&buf, pos);
+        (question, pos) = read_question(buf, pos);
         questions.push(question)
     }
 
     let mut answers: Vec<ResourceRecord> = Vec::new();
     for _ in 0 .. header.ancount {
         let resource_record: ResourceRecord;
-        (resource_record, pos) = read_resource_record(&buf, pos);
+        (resource_record, pos) = read_resource_record(buf, pos);
         answers.push(resource_record)
     }
 
     let mut authority_records: Vec<ResourceRecord> = Vec::new();
     for _ in 0 .. header.nscount {
         let resource_record: ResourceRecord;
-        (resource_record, pos) = read_resource_record(&buf, pos);
+        (resource_record, pos) = read_resource_record(buf, pos);
         authority_records.push(resource_record)
     }
 
     let mut additional_records: Vec<ResourceRecord> = Vec::new();
     for _ in 0 .. header.arcount {
         let resource_record: ResourceRecord;
-        (resource_record, pos) = read_resource_record(&buf, pos);
+        (resource_record, pos) = read_resource_record(buf, pos);
         additional_records.push(resource_record)
     }
 
-    return Message { 
-        hdr: header, 
-        questions: questions, 
-        answers: answers, 
-        authority_records: authority_records, 
-        additional_records: additional_records,
-    };
+    Message { 
+        header, 
+        questions, 
+        answers, 
+        authority_records, 
+        additional_records,
+    }
 }
