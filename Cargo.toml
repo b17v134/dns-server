@@ -1,10 +1,11 @@
 [workspace]
-members = ["dns", "server"]
+members = ["client", "dns", "server"]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
+resolve-client = { path="server", version="0.1.0" }
 resolve-dns = { path="dns", version="0.1.0" }
 resolve-server = { path="server", version="0.1.0" }

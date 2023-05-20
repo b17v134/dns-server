@@ -1,0 +1,10 @@
+[package]
+name = "client"
+version.workspace = true
+
+[[bin]]
+name = "resolv"
+
+[dependencies]
+clap = { version = "4.3.0", features = ["derive"] }
+resolve-dns = { workspace = true, path="../dns"}

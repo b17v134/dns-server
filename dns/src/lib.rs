@@ -1,3 +1,7 @@
+extern crate rand;
+
+use rand::Rng;
+
 // https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-4;
 pub const DNS_TYPE_ERROR: u16 = 0;
 pub const DNS_TYPE_A: u16 = 1;
@@ -188,7 +192,7 @@ pub const DNS_STR_TYPE_AMTREPLAY: &str = "AMTREPLAY";
 pub const DNS_STR_TYPE_TA: &str = "TA";
 pub const DNS_STR_TYPE_DLV: &str = "DLV";
 
-fn dns_type_to_u16(v: &str) -> u16 {
+pub fn dns_type_to_u16(v: &str) -> u16 {
     match v {
         DNS_STR_TYPE_A => DNS_TYPE_A,
         DNS_STR_TYPE_NS => DNS_TYPE_NS,
@@ -285,7 +289,7 @@ fn dns_type_to_u16(v: &str) -> u16 {
     }
 }
 
-fn u16_to_dns_type(v: u16) -> &'static str {
+pub fn u16_to_dns_type(v: u16) -> &'static str {
     match v {
         DNS_TYPE_A => DNS_STR_TYPE_A,
         DNS_TYPE_NS => DNS_STR_TYPE_NS,
@@ -616,4 +620,39 @@ pub fn get_message(buf: &[u8]) -> Message {
         authority_records, 
         additional_records,
     }
+}
+
+pub struct Request {
+    pub server: String,
+    pub port: u16,
+    pub protocol: String,
+    pub qname: Vec<String>,
+    pub type_: u16,
+    pub class: String 
+}
+
+fn create_header() -> Header {
+    let mut rnd = rand::thread_rng();
+    Header{
+        id: rnd.gen_range(0..0x10000),
+        qr: 1,
+        opcode: 0,
+        aa: 0,
+        tc: 0,
+        rd: 1,
+        ra: 0,
+        z: 0,
+        rcode: 0,
+        qdcount: 1,
+        ancount: 0,
+        nscount: 0,
+        arcount: 0,
+    }
+}
+
+fn create_request(request: Request) -> (&'static [u8], usize) {
+    let header = create_header();
+}
+pub fn resolv(request: Request) -> Message {
+
 }
