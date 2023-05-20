@@ -1,0 +1,9 @@
+[package]
+name = "resolve-dns"
+version.workspace = true
+
+[lib]
+name = "resolve_dns"
+path = "src/lib.rs"
+
+[dependencies]

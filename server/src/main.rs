@@ -1,10 +1,10 @@
 //#![deny(warnings)]
+extern crate resolve_dns;
 
 use std::{net::{UdpSocket, SocketAddr}, process::exit};
 use std::thread;
 
-mod dns;
-use dns::*;
+use resolve_dns::get_message;
 
 fn handle_client(_: &SocketAddr, _: usize, buf: [u8; 4096]) {
     println!("buf = {:?}", buf);
