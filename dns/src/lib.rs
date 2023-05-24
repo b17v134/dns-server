@@ -1,6 +1,10 @@
 extern crate rand;
 
+use std::net::UdpSocket;
+
 use rand::Rng;
+
+use std::io::Error;
 
 // https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-4;
 pub const DNS_TYPE_ERROR: u16 = 0;
@@ -386,6 +390,33 @@ pub fn u16_to_dns_type(v: u16) -> &'static str {
     }
 }
 
+pub const DNS_CLASS_ERROR: u16 = 0;
+pub const DNS_CLASS_IN: u16 = 1;
+pub const DNS_CLASS_CH: u16 = 3;
+pub const DNS_CLASS_HS: u16 = 4;
+
+pub const DNS_STR_CLASS_IN: &str = "IN";
+pub const DNS_STR_CLASS_CH: &str = "CH";
+pub const DNS_STR_CLASS_HS: &str = "HS";
+
+pub fn dns_class_to_u16(v: &str) -> u16 {
+    match v {
+        DNS_STR_CLASS_IN => DNS_CLASS_IN,
+        DNS_STR_CLASS_CH => DNS_CLASS_CH,
+        DNS_STR_CLASS_HS => DNS_CLASS_HS,
+        _ => DNS_CLASS_ERROR,
+    }
+}
+
+pub fn u16_to_dns_class(v: u16) -> &'static str {
+    match v {
+        DNS_CLASS_IN => DNS_STR_CLASS_IN,
+        DNS_CLASS_CH => DNS_STR_CLASS_CH,
+        DNS_CLASS_HS => DNS_STR_CLASS_HS,
+        _ => "ERROR",
+    }
+}
+
 // https://www.rfc-editor.org/rfc/rfc1035 4.1.1
 pub struct Header {
     // Identifier.
@@ -626,7 +657,7 @@ pub struct Request {
     pub server: String,
     pub port: u16,
     pub protocol: String,
-    pub qname: Vec<String>,
+    pub qname: String,
     pub type_: u16,
     pub class: String 
 }
@@ -634,8 +665,8 @@ pub struct Request {
 fn create_header() -> Header {
     let mut rnd = rand::thread_rng();
     Header{
-        id: rnd.gen_range(0..0x10000),
-        qr: 1,
+        id: rnd.gen_range(0..0xffff),
+        qr: 0,
         opcode: 0,
         aa: 0,
         tc: 0,
@@ -650,9 +681,146 @@ fn create_header() -> Header {
     }
 }
 
-fn create_request(request: Request) -> (&'static [u8], usize) {
-    let header = create_header();
-}
-pub fn resolv(request: Request) -> Message {
+fn write_header(buf: &mut [u8], header: &Header) -> usize {
+    write_u16(buf, header.id);
+    write_u16(&mut buf[2..], get_flags(header));
+    write_u16(&mut buf[4..], header.qdcount);
+    write_u16(&mut buf[6..], header.ancount);
+    write_u16(&mut buf[8..], header.ancount);
+    write_u16(&mut buf[10..], header.arcount);
 
+    12
+}
+
+fn write_qname(buf: &mut [u8], qname: String) -> usize {
+    let s = qname.as_bytes();
+    let mut length = s.len();
+    if char::from(s[length - 1]) == '.' {
+        length -=1;
+    }
+    let mut write_count = true;
+    let mut pos = 0;
+    for i in 0..length {
+        if write_count {
+            let mut count = 0;
+            let mut j = i;
+            while (j < length) && (char::from(s[j]) != '.') {
+                j += 1;
+                count += 1;
+            }
+            buf[pos] = count;
+            pos += 1;
+            write_count = false;
+        }
+        if char::from(s[i]) == '.' {
+            write_count = true;
+            continue;
+        }
+        buf[pos] = s[i];
+        pos += 1;
+    }
+    return pos;
+}
+
+fn write_question(buf: &mut [u8], question: Question) ->usize {
+    let length = write_qname(buf, question.qname);
+    write_u16(&mut buf[length + 1 ..], question.qtype);
+    write_u16(&mut buf[length + 3 ..], question.qclass);
+
+    length + 5
+}
+
+fn create_request_buf(buf: &mut [u8], question: Question) -> usize {
+    let header = create_header();
+    let header_length = write_header(buf, &header);
+    let length = write_question(&mut buf[header_length ..], question);
+
+    return header_length +  length;
+}
+
+pub fn resolv(request: Request) -> Result<Message, Error> {
+    let question = Question{
+        qname: request.qname, 
+        qtype: request.type_,
+        qclass: dns_class_to_u16(request.class.as_str()),
+    };
+    let mut buf = [0; 2048];
+    let length =  create_request_buf(buf.as_mut_slice(), question);
+
+    let result = UdpSocket::bind("[::]:0");
+    let mut socket: UdpSocket;
+    match result {
+        Ok(s) => {
+            socket = s;
+        },
+        Err(e) => {
+            return Err(e)
+        }
+    }
+
+    let send_buf: &[u8] = &buf[0 .. length];
+    socket.send_to(send_buf, request.server + ":" + request.port.to_string().as_str());
+    let mut buf2 = [0; 2048];
+	let (amt, _src) = socket.recv_from(&mut buf2)?;
+
+	let message = get_message(&buf2);
+    Ok(message)
+}
+
+fn get_flags(header:&Header) -> u16 {
+    (u16::from(header.qr & 1) << 15) + (u16::from(header.rd & 1) << 8)
+}
+
+fn write_u16(buf: &mut [u8], value: u16) {
+    buf[0] = ((value & 0xFF00) >> 8) as u8;
+    buf[1] = (value & 0xFF) as u8;
+} 
+
+pub fn print_message(message: Message) {
+    {
+        println!("header:");
+        print_header(message.header);
+    
+        println!("\nquestions:");
+        for question in message.questions.iter() {
+            println!(
+                "{}\t\t{}\t{}",
+                question.qname,
+                u16_to_dns_class(question.qclass),
+                u16_to_dns_type(question.qtype));
+        }
+        /*
+        puts("\nanswers:");
+        for (int i = 0; i < resp.hdr.ancount; i++) {
+            print_resource_record(resp.answers[i]);
+        }
+        puts("\nauthority records:");
+        for (int i = 0; i < resp.hdr.nscount; i++) {
+            print_resource_record(resp.authority_records[i]);
+        }
+        puts("\nadditional records:");
+        for (int i = 0; i < resp.hdr.arcount; i++) {
+            print_resource_record(resp.additional_records[i]);
+        }
+        */
+    }
+}
+
+fn print_header(header: Header)
+{
+    println!(
+        "id: {}\nresponse: {}\nopcode: {}\nauthoritative: {}\ntruncated: {}\nrecursion desired: {}\nrecursion available: {}\nreserved: {}\nrcode: {}\nquestion: {}\nanswer: {}\nauthority: {}\nadditional: {}\n",
+        header.id,
+        header.qr,
+        header.opcode,
+        header.aa,
+        header.tc,
+        header.rd,
+        header.ra,
+        header.z,
+        header.rcode,
+        header.qdcount,
+        header.ancount,
+        header.nscount,
+        header.arcount);
 }

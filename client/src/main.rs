@@ -48,16 +48,19 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    let mut hosts: Vec<String> = Vec::new();
-    hosts.push(args.host);
 
     let request = resolve_dns::Request{
         server: args.server,
         port: args.port,
         protocol: String::from("udp"),
         type_: resolve_dns::dns_type_to_u16(&args.type_),
-        qname: hosts,
+        qname: args.host,
         class: args.class,
     };
     let result = resolve_dns::resolv(request);
+    match result {
+        Ok(r) => resolve_dns::print_message(r),
+        Err(e) => println!("{}", e)
+        
+    }
 }
