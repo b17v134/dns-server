@@ -484,6 +484,13 @@ pub struct Message {
     pub additional_records: Vec<ResourceRecord>
 }
 
+pub enum Protocol {
+    Https,
+    Tcp,
+    Tls,
+    Udp,
+ }
+
 /*fn read_u8(buf: &Vec<u8>, pos: usize) -> u8 {
     return buf[pos];
 }*/
@@ -588,10 +595,12 @@ fn read_ipv4(buf: &[u8], pos: usize) -> String {
 
 fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
     let mut qname = String::new();
-    let tmp_current_pos = read_qname(buf, pos, &mut qname);
+    let mut tmp_current_pos = read_qname(buf, pos, &mut qname);
 
     let resource_record_type = read_u16(buf, tmp_current_pos + 1);
-
+    println!("tmp_current_pos = {}", tmp_current_pos);
+    println!("type = {}", resource_record_type);
+    println!("qname = '{}'", qname);
     let mut rdata: String = String::from("");
     match resource_record_type {
         DNS_TYPE_A => { rdata = read_ipv4(buf, tmp_current_pos + 11);},
@@ -608,6 +617,9 @@ fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
         rdata, 
     };
 
+    let length = resource_record.rdlength;
+    println!("length = {}", length);
+    tmp_current_pos += 11 + usize::from(resource_record.rdlength);
     (resource_record, tmp_current_pos)
 }
 
@@ -656,7 +668,7 @@ pub fn get_message(buf: &[u8]) -> Message {
 pub struct Request {
     pub server: String,
     pub port: u16,
-    pub protocol: String,
+    pub protocol: Protocol,
     pub qname: String,
     pub type_: u16,
     pub class: String 
@@ -748,7 +760,7 @@ pub fn resolv(request: Request) -> Result<Message, Error> {
     let length =  create_request_buf(buf.as_mut_slice(), question);
 
     let result = UdpSocket::bind("[::]:0");
-    let mut socket: UdpSocket;
+    let socket: UdpSocket;
     match result {
         Ok(s) => {
             socket = s;
@@ -789,20 +801,21 @@ pub fn print_message(message: Message) {
                 u16_to_dns_class(question.qclass),
                 u16_to_dns_type(question.qtype));
         }
-        /*
-        puts("\nanswers:");
-        for (int i = 0; i < resp.hdr.ancount; i++) {
-            print_resource_record(resp.answers[i]);
+        
+        println!("\nanswers:");
+        for answer in message.answers.iter() {
+            print_resource_record(answer);
         }
-        puts("\nauthority records:");
-        for (int i = 0; i < resp.hdr.nscount; i++) {
-            print_resource_record(resp.authority_records[i]);
+
+        println!("\nauthority records:");
+        for authority_record in message.authority_records.iter() {
+            print_resource_record(authority_record);
         }
-        puts("\nadditional records:");
-        for (int i = 0; i < resp.hdr.arcount; i++) {
-            print_resource_record(resp.additional_records[i]);
+
+        println!("\nadditional records:");
+        for additional_record in message.additional_records.iter() {
+            print_resource_record(additional_record);
         }
-        */
     }
 }
 
@@ -823,4 +836,15 @@ fn print_header(header: Header)
         header.ancount,
         header.nscount,
         header.arcount);
+}
+
+fn print_resource_record(resource_record: &ResourceRecord) {
+    println!(
+        "{}\t{}\t{}\t{}\t{}",
+        resource_record.name,
+        resource_record.ttl,
+        u16_to_dns_class(resource_record.class),
+        u16_to_dns_type(resource_record._type),
+        resource_record.rdata,
+    );
 }
