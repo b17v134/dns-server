@@ -1,11 +1,8 @@
 extern crate rand;
 
-use std::{net::{Ipv6Addr, UdpSocket}, fs::read};
-
 use rand::Rng;
-
 use std::io::Error;
-
+use std::net::{Ipv6Addr, UdpSocket};
 
 // https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-4;
 pub const DNS_TYPE_ERROR: u16 = 0;
@@ -198,7 +195,7 @@ pub const DNS_STR_TYPE_TA: &str = "TA";
 pub const DNS_STR_TYPE_DLV: &str = "DLV";
 
 pub fn dns_type_to_u16(v: &str) -> u16 {
-    match v {
+    match v.to_uppercase().as_str() {
         DNS_STR_TYPE_A => DNS_TYPE_A,
         DNS_STR_TYPE_NS => DNS_TYPE_NS,
         DNS_STR_TYPE_MD => DNS_TYPE_MD,
@@ -401,7 +398,7 @@ pub const DNS_STR_CLASS_CH: &str = "CH";
 pub const DNS_STR_CLASS_HS: &str = "HS";
 
 pub fn dns_class_to_u16(v: &str) -> u16 {
-    match v {
+    match v.to_uppercase().as_str() {
         DNS_STR_CLASS_IN => DNS_CLASS_IN,
         DNS_STR_CLASS_CH => DNS_CLASS_CH,
         DNS_STR_CLASS_HS => DNS_CLASS_HS,
