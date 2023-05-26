@@ -614,7 +614,7 @@ fn read_mx(buf: &[u8], pos: usize) -> String {
     let mut qname = String::new();
     read_qname(buf, pos + 2, &mut qname);
 
-    format!("{} {}", preference, qname)
+    format!("{preference} {qname}")
 }
 
 fn read_soa(buf: &[u8], pos: usize) -> String {
@@ -624,9 +624,7 @@ fn read_soa(buf: &[u8], pos: usize) -> String {
     let mut mailbox = String::new();
     cur_pos = read_qname(buf, cur_pos, &mut mailbox);
     format!(
-        "{} {} {} {} {} {} {}",
-        nameserver,
-        mailbox,
+        "{nameserver} {mailbox} {} {} {} {} {}",
         read_u32(buf, cur_pos),
         read_u32(buf, cur_pos + 4),
         read_u32(buf, cur_pos + 8),
