@@ -613,6 +613,24 @@ fn read_mx(buf: &[u8], pos: usize) -> String {
     format!("{} {}", preference, qname)
 }
 
+fn read_soa(buf: &[u8], pos: usize) -> String {
+    let mut mname = String::new();
+    let mut cur_pos = read_qname(buf, pos, &mut mname);
+
+    let mut rname = String::new();
+    cur_pos = read_qname(buf, cur_pos, &mut rname);
+    format!(
+        "{} {} {} {} {} {} {}",
+        mname,
+        rname,
+        read_u32(buf, cur_pos),
+        read_u32(buf, cur_pos + 4),
+        read_u32(buf, cur_pos + 8),
+        read_u32(buf, cur_pos + 12),
+        read_u32(buf, cur_pos + 16),
+    )
+}
+
 fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
     let mut qname = String::new();
     let mut tmp_current_pos = read_qname(buf, pos, &mut qname);
@@ -620,10 +638,11 @@ fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
     let resource_record_type = read_u16(buf, tmp_current_pos + 1);
     let mut rdata: String = String::from("");
     match resource_record_type {
-        DNS_TYPE_A => { rdata = read_ipv4(buf, tmp_current_pos + 11);},
-        DNS_TYPE_AAAA => { rdata = read_ipv6(buf, tmp_current_pos + 11);},
-        DNS_TYPE_MX => { rdata = read_mx(buf, tmp_current_pos + 11);},
-        _ =>  { read_qname(buf, tmp_current_pos + 11, &mut rdata); },
+        DNS_TYPE_A =>    { rdata = read_ipv4(buf, tmp_current_pos + 11); },
+        DNS_TYPE_AAAA => { rdata = read_ipv6(buf, tmp_current_pos + 11); },
+        DNS_TYPE_MX =>   { rdata = read_mx(buf, tmp_current_pos + 11); },
+        DNS_TYPE_SOA =>  { rdata = read_soa(buf, tmp_current_pos + 11); },
+        _ =>             { read_qname(buf, tmp_current_pos + 11, &mut rdata); },
     }
 
     let resource_record = ResourceRecord{ 
