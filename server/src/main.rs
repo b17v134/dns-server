@@ -8,7 +8,7 @@ use resolve_dns::get_message;
 
 fn handle_client(_: &SocketAddr, _: usize, buf: &[u8; 4096]) {
     let message = get_message(&Vec::from(buf.as_slice()));
-    println!("{}", message.header.id)
+    println!("{}", message.header.id);
 }
 
 fn main() {
