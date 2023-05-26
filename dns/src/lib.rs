@@ -605,6 +605,14 @@ fn read_ipv6(buf: &[u8], pos: usize) -> String {
     addr.to_string()
 }
 
+fn read_mx(buf: &[u8], pos: usize) -> String {
+    let preference = read_u16(buf, pos);
+    let mut qname = String::new();
+    read_qname(buf, pos + 2, &mut qname);
+
+    format!("{} {}", preference, qname)
+}
+
 fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
     let mut qname = String::new();
     let mut tmp_current_pos = read_qname(buf, pos, &mut qname);
@@ -614,6 +622,7 @@ fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
     match resource_record_type {
         DNS_TYPE_A => { rdata = read_ipv4(buf, tmp_current_pos + 11);},
         DNS_TYPE_AAAA => { rdata = read_ipv6(buf, tmp_current_pos + 11);},
+        DNS_TYPE_MX => { rdata = read_mx(buf, tmp_current_pos + 11);},
         _ =>  { read_qname(buf, tmp_current_pos + 11, &mut rdata); },
     }
 
