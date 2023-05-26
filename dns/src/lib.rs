@@ -1,10 +1,11 @@
 extern crate rand;
 
-use std::net::UdpSocket;
+use std::{net::{Ipv6Addr, UdpSocket}, fs::read};
 
 use rand::Rng;
 
 use std::io::Error;
+
 
 // https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-4;
 pub const DNS_TYPE_ERROR: u16 = 0;
@@ -579,7 +580,7 @@ fn read_question(buf: &[u8], pos: usize) -> (Question, usize) {
         qclass: read_u16(buf, current_pos+ 2),
     };
 
-    (q, pos + 4)
+    (q, current_pos + 4)
 }
 
 fn read_ipv4(buf: &[u8], pos: usize) -> String {
@@ -592,19 +593,30 @@ fn read_ipv4(buf: &[u8], pos: usize) -> String {
     )
 }
 
+fn read_ipv6(buf: &[u8], pos: usize) -> String {
+    let addr = Ipv6Addr::new(
+        read_u16(buf, pos), 
+        read_u16(buf, pos + 2), 
+        read_u16(buf, pos + 4), 
+        read_u16(buf, pos + 6), 
+        read_u16(buf, pos + 8), 
+        read_u16(buf, pos + 10), 
+        read_u16(buf, pos + 12), 
+        read_u16(buf, pos + 14),
+    );
+
+    addr.to_string()
+}
 
 fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
     let mut qname = String::new();
     let mut tmp_current_pos = read_qname(buf, pos, &mut qname);
 
     let resource_record_type = read_u16(buf, tmp_current_pos + 1);
-    println!("tmp_current_pos = {}", tmp_current_pos);
-    println!("type = {}", resource_record_type);
-    println!("qname = '{}'", qname);
     let mut rdata: String = String::from("");
     match resource_record_type {
         DNS_TYPE_A => { rdata = read_ipv4(buf, tmp_current_pos + 11);},
-        /*DNS_TYPE_AAAA => { rdata = read_ipv6(buf, tmp_current_pos + 11);},*/
+        DNS_TYPE_AAAA => { rdata = read_ipv6(buf, tmp_current_pos + 11);},
         _ =>  { read_qname(buf, tmp_current_pos + 11, &mut rdata); },
     }
 
@@ -618,7 +630,6 @@ fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
     };
 
     let length = resource_record.rdlength;
-    println!("length = {}", length);
     tmp_current_pos += 11 + usize::from(resource_record.rdlength);
     (resource_record, tmp_current_pos)
 }

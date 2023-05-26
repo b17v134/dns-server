@@ -67,7 +67,7 @@ fn main() {
     };
     let result = resolve_dns::resolv(request);
     match result {
-        Ok(r) => resolve_dns::print_message(r),
+        Ok(message) => resolve_dns::print_message(message),
         Err(e) => println!("{}", e)
         
     }
