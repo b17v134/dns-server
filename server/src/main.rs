@@ -7,7 +7,8 @@ use std::thread;
 use resolve_dns::get_message;
 
 fn handle_client(_: &SocketAddr, _: usize, buf: &[u8; 4096]) {
-    let _ = get_message(&Vec::from(buf.as_slice()));
+    let message = get_message(&Vec::from(buf.as_slice()));
+    println!("{}", message.header.id)
 }
 
 fn main() {
@@ -29,7 +30,7 @@ fn main() {
                 thread::spawn(move || handle_client(&s.1, s.0, &buf));
             },
             Err(e) =>  {
-                println!("{}", e);
+                println!("{e}");
                 exit(1)
             }
         } 
