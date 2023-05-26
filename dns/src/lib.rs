@@ -498,8 +498,8 @@ fn read_u16(buf: &[u8], pos: usize) -> u16 {
 }
 
 fn read_u32(buf: &[u8], pos: usize) -> u32 {
-        u32::from(buf[pos]) * 0x1000000 + 
-        u32::from(buf[pos + 1]) * 0x10000 +
+        u32::from(buf[pos]) * 0x100_0000 + 
+        u32::from(buf[pos + 1]) * 0x1_0000 +
         u32::from(buf[pos + 2]) *0x100 + 
         u32::from(buf[pos + 3])
 }
@@ -614,15 +614,15 @@ fn read_mx(buf: &[u8], pos: usize) -> String {
 }
 
 fn read_soa(buf: &[u8], pos: usize) -> String {
-    let mut mname = String::new();
-    let mut cur_pos = read_qname(buf, pos, &mut mname);
+    let mut nameserver = String::new();
+    let mut cur_pos = read_qname(buf, pos, &mut nameserver);
 
-    let mut rname = String::new();
-    cur_pos = read_qname(buf, cur_pos, &mut rname);
+    let mut mailbox = String::new();
+    cur_pos = read_qname(buf, cur_pos, &mut mailbox);
     format!(
         "{} {} {} {} {} {} {}",
-        mname,
-        rname,
+        nameserver,
+        mailbox,
         read_u32(buf, cur_pos),
         read_u32(buf, cur_pos + 4),
         read_u32(buf, cur_pos + 8),
@@ -654,7 +654,6 @@ fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
         rdata, 
     };
 
-    let length = resource_record.rdlength;
     tmp_current_pos += 11 + usize::from(resource_record.rdlength);
     (resource_record, tmp_current_pos)
 }
@@ -809,7 +808,7 @@ pub fn resolv(request: Request) -> Result<Message, Error> {
     let send_buf: &[u8] = &buf[0 .. length];
     socket.send_to(send_buf, request.server + ":" + request.port.to_string().as_str());
     let mut buf2 = [0; 2048];
-	let (amt, _src) = socket.recv_from(&mut buf2)?;
+	let (_amt, _src) = socket.recv_from(&mut buf2)?;
 
 	let message = get_message(&buf2);
     Ok(message)
