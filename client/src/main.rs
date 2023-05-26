@@ -15,7 +15,7 @@ enum ArgProtocol {
    Udp,
 }
 
-fn arg_protocol_as_protocol(protocol: ArgProtocol) ->resolve_dns::Protocol {
+fn arg_protocol_as_protocol(protocol: &ArgProtocol) ->resolve_dns::Protocol {
     match protocol {
         ArgProtocol::Https => resolve_dns::Protocol::Https,
         ArgProtocol::Tcp => resolve_dns::Protocol::Tcp,
@@ -60,14 +60,14 @@ fn main() {
     let request = resolve_dns::Request{
         server: args.server,
         port: args.port,
-        protocol: arg_protocol_as_protocol(args.protocol),
+        protocol: arg_protocol_as_protocol(&args.protocol),
         type_: resolve_dns::dns_type_to_u16(&args.type_),
         qname: args.host,
         class: args.class,
     };
     let result = resolve_dns::resolv(request);
     match result {
-        Ok(message) => resolve_dns::print_message(message),
+        Ok(message) => resolve_dns::print_message(&message),
         Err(e) => println!("{}", e)
         
     }
