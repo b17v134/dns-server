@@ -28,6 +28,7 @@ fn arg_protocol_as_protocol(protocol: &ArgProtocol) -> resolve_dns::Protocol {
 enum OutputFormat {
     Json,
     Plain,
+    Yaml,
 }
 
 #[derive(Parser, Debug)]
@@ -70,6 +71,7 @@ fn main() {
         Ok(message) => match args.output_format {
             OutputFormat::Json => resolve_dns::print_json(&message),
             OutputFormat::Plain => resolve_dns::print_message(&message),
+            OutputFormat::Yaml => resolve_dns::print_yaml(&message),
         },
         Err(e) => println!("{e}"),
     }

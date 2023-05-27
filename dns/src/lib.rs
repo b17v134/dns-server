@@ -1,6 +1,7 @@
 extern crate rand;
 extern crate serde;
 extern crate serde_json;
+extern crate serde_yaml;
 
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -916,6 +917,15 @@ fn print_resource_record(resource_record: &ResourceRecord) {
 
 pub fn print_json(message: &Message) {
     let result = serde_json::to_string_pretty(message);
+
+    match result {
+        Ok(str) => println!("{str}"),
+        Err(e) => println!("{e}"),
+    };
+}
+
+pub fn print_yaml(message: &Message) {
+    let result = serde_yaml::to_string(message);
 
     match result {
         Ok(str) => println!("{str}"),
