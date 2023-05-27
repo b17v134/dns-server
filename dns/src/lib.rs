@@ -281,16 +281,16 @@ pub fn dns_type_to_u16(v: &str) -> u16 {
         DNS_STR_TYPE_AXFR => DNS_TYPE_AXFR,
         DNS_STR_TYPE_MAILB => DNS_TYPE_MAILB,
         DNS_STR_TYPE_MAILA => DNS_TYPE_MAILA,
-    
+
         DNS_STR_TYPE_ANY => DNS_TYPE_ANY,
-    
+
         DNS_STR_TYPE_URI => DNS_TYPE_URI,
         DNS_STR_TYPE_CAA => DNS_TYPE_CAA,
         DNS_STR_TYPE_AVC => DNS_TYPE_AVC,
         DNS_STR_TYPE_DOA => DNS_TYPE_DOA,
         DNS_STR_TYPE_AMTREPLAY => DNS_TYPE_AMTREPLAY,
         DNS_STR_TYPE_TA => DNS_TYPE_TA,
-        DNS_STR_TYPE_DLV => DNS_TYPE_DLV, 
+        DNS_STR_TYPE_DLV => DNS_TYPE_DLV,
         _ => DNS_TYPE_ERROR,
     }
 }
@@ -470,7 +470,7 @@ pub struct Header {
 pub struct Question {
     pub qname: String,
     pub qtype: u16,
-    pub qclass: u16
+    pub qclass: u16,
 }
 
 // https://www.rfc-editor.org/rfc/rfc1035 4.1.3
@@ -491,7 +491,7 @@ pub struct Message {
     pub questions: Vec<Question>,
     pub answers: Vec<ResourceRecord>,
     pub authority_records: Vec<ResourceRecord>,
-    pub additional_records: Vec<ResourceRecord>
+    pub additional_records: Vec<ResourceRecord>,
 }
 
 pub enum Protocol {
@@ -499,27 +499,27 @@ pub enum Protocol {
     Tcp,
     Tls,
     Udp,
- }
+}
 
 /*fn read_u8(buf: &Vec<u8>, pos: usize) -> u8 {
     return buf[pos];
 }*/
 
 fn read_u16(buf: &[u8], pos: usize) -> u16 {
-    u16::from(buf[pos]) * 0x100 + u16::from(buf[pos+ 1])
+    u16::from(buf[pos]) * 0x100 + u16::from(buf[pos + 1])
 }
 
 fn read_u32(buf: &[u8], pos: usize) -> u32 {
-        u32::from(buf[pos]) * 0x100_0000 + 
-        u32::from(buf[pos + 1]) * 0x1_0000 +
-        u32::from(buf[pos + 2]) *0x100 + 
-        u32::from(buf[pos + 3])
+    u32::from(buf[pos]) * 0x100_0000
+        + u32::from(buf[pos + 1]) * 0x1_0000
+        + u32::from(buf[pos + 2]) * 0x100
+        + u32::from(buf[pos + 3])
 }
 
 fn read_header(buf: &[u8]) -> Header {
     let flags = read_u16(buf, 2);
 
-    Header{
+    Header {
         id: read_u16(buf, 0),
         qr: ((flags & (1 << 15)) >> 15) as u8,
         opcode: ((flags & (0xF << 11)) >> 11) as u8,
@@ -554,7 +554,7 @@ fn read_qname(buf: &[u8], pos: usize, qname: &mut String) -> usize {
             }
             tmp_pos = usize::from(read_u16(buf, tmp_pos) - (0x3 << 14));
             length = buf[tmp_pos];
-            for i in 0 .. length {
+            for i in 0..length {
                 qname.push(char::from(buf[tmp_pos + 1 + usize::from(i)]));
             }
             qname.push('.');
@@ -564,7 +564,7 @@ fn read_qname(buf: &[u8], pos: usize, qname: &mut String) -> usize {
                 max_pos = tmp_pos;
             }
 
-            for i in 0 .. length {
+            for i in 0..length {
                 qname.push(char::from(buf[tmp_pos + 1 + usize::from(i)]));
             }
             qname.push('.');
@@ -575,7 +575,7 @@ fn read_qname(buf: &[u8], pos: usize, qname: &mut String) -> usize {
     if max_pos < tmp_pos {
         max_pos = tmp_pos;
     }
-    
+
     max_pos + 1
 }
 
@@ -583,10 +583,10 @@ fn read_question(buf: &[u8], pos: usize) -> (Question, usize) {
     let mut qname = String::new();
     let current_pos = read_qname(buf, pos, &mut qname);
 
-    let q = Question{
+    let q = Question {
         qname,
         qtype: read_u16(buf, current_pos),
-        qclass: read_u16(buf, current_pos+ 2),
+        qclass: read_u16(buf, current_pos + 2),
     };
 
     (q, current_pos + 4)
@@ -594,7 +594,7 @@ fn read_question(buf: &[u8], pos: usize) -> (Question, usize) {
 
 fn read_ipv4(buf: &[u8], pos: usize) -> String {
     format!(
-        "{}.{}.{}.{}", 
+        "{}.{}.{}.{}",
         buf[pos],
         buf[pos + 1],
         buf[pos + 2],
@@ -604,13 +604,13 @@ fn read_ipv4(buf: &[u8], pos: usize) -> String {
 
 fn read_ipv6(buf: &[u8], pos: usize) -> String {
     let addr = Ipv6Addr::new(
-        read_u16(buf, pos), 
-        read_u16(buf, pos + 2), 
-        read_u16(buf, pos + 4), 
-        read_u16(buf, pos + 6), 
-        read_u16(buf, pos + 8), 
-        read_u16(buf, pos + 10), 
-        read_u16(buf, pos + 12), 
+        read_u16(buf, pos),
+        read_u16(buf, pos + 2),
+        read_u16(buf, pos + 4),
+        read_u16(buf, pos + 6),
+        read_u16(buf, pos + 8),
+        read_u16(buf, pos + 10),
+        read_u16(buf, pos + 12),
         read_u16(buf, pos + 14),
     );
 
@@ -648,20 +648,30 @@ fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
     let resource_record_type = read_u16(buf, tmp_current_pos + 1);
     let mut rdata: String = String::new();
     match resource_record_type {
-        DNS_TYPE_A =>    { rdata = read_ipv4(buf, tmp_current_pos + 11); },
-        DNS_TYPE_AAAA => { rdata = read_ipv6(buf, tmp_current_pos + 11); },
-        DNS_TYPE_MX =>   { rdata = read_mx(buf, tmp_current_pos + 11); },
-        DNS_TYPE_SOA =>  { rdata = read_soa(buf, tmp_current_pos + 11); },
-        _ =>             { read_qname(buf, tmp_current_pos + 11, &mut rdata); },
+        DNS_TYPE_A => {
+            rdata = read_ipv4(buf, tmp_current_pos + 11);
+        }
+        DNS_TYPE_AAAA => {
+            rdata = read_ipv6(buf, tmp_current_pos + 11);
+        }
+        DNS_TYPE_MX => {
+            rdata = read_mx(buf, tmp_current_pos + 11);
+        }
+        DNS_TYPE_SOA => {
+            rdata = read_soa(buf, tmp_current_pos + 11);
+        }
+        _ => {
+            read_qname(buf, tmp_current_pos + 11, &mut rdata);
+        }
     }
 
-    let resource_record = ResourceRecord{ 
-        name: qname, 
-        type_: resource_record_type, 
-        class: read_u16(buf, tmp_current_pos + 3), 
-        ttl: read_u32(buf, tmp_current_pos + 5), 
-        rdlength: read_u16(buf, tmp_current_pos + 9), 
-        rdata, 
+    let resource_record = ResourceRecord {
+        name: qname,
+        type_: resource_record_type,
+        class: read_u16(buf, tmp_current_pos + 3),
+        ttl: read_u32(buf, tmp_current_pos + 5),
+        rdlength: read_u16(buf, tmp_current_pos + 9),
+        rdata,
     };
 
     tmp_current_pos += 11 + usize::from(resource_record.rdlength);
@@ -675,38 +685,38 @@ pub fn get_message(buf: &[u8]) -> Message {
     let mut pos = 12;
 
     let mut questions: Vec<Question> = Vec::new();
-    for _ in 0 .. header.qdcount {
+    for _ in 0..header.qdcount {
         let question: Question;
         (question, pos) = read_question(buf, pos);
         questions.push(question);
     }
 
     let mut answers: Vec<ResourceRecord> = Vec::new();
-    for _ in 0 .. header.ancount {
+    for _ in 0..header.ancount {
         let resource_record: ResourceRecord;
         (resource_record, pos) = read_resource_record(buf, pos);
         answers.push(resource_record);
     }
 
     let mut authority_records: Vec<ResourceRecord> = Vec::new();
-    for _ in 0 .. header.nscount {
+    for _ in 0..header.nscount {
         let resource_record: ResourceRecord;
         (resource_record, pos) = read_resource_record(buf, pos);
         authority_records.push(resource_record);
     }
 
     let mut additional_records: Vec<ResourceRecord> = Vec::new();
-    for _ in 0 .. header.arcount {
+    for _ in 0..header.arcount {
         let resource_record: ResourceRecord;
         (resource_record, pos) = read_resource_record(buf, pos);
         additional_records.push(resource_record);
     }
 
-    Message { 
-        header, 
-        questions, 
-        answers, 
-        authority_records, 
+    Message {
+        header,
+        questions,
+        answers,
+        authority_records,
         additional_records,
     }
 }
@@ -717,12 +727,12 @@ pub struct Request {
     pub protocol: Protocol,
     pub qname: String,
     pub type_: u16,
-    pub class: String 
+    pub class: String,
 }
 
 fn create_header() -> Header {
     let mut rnd = rand::thread_rng();
-    Header{
+    Header {
         id: rnd.gen_range(0..0xffff),
         qr: 0,
         opcode: 0,
@@ -754,7 +764,7 @@ fn write_qname(buf: &mut [u8], qname: &str) -> usize {
     let s = qname.as_bytes();
     let mut length = s.len();
     if char::from(s[length - 1]) == '.' {
-        length -=1;
+        length -= 1;
     }
     let mut write_count = true;
     let mut pos = 0;
@@ -781,10 +791,10 @@ fn write_qname(buf: &mut [u8], qname: &str) -> usize {
     pos
 }
 
-fn write_question(buf: &mut [u8], question: &Question) ->usize {
+fn write_question(buf: &mut [u8], question: &Question) -> usize {
     let length = write_qname(buf, question.qname.as_str());
-    write_u16(&mut buf[length + 1 ..], question.qtype);
-    write_u16(&mut buf[length + 3 ..], question.qclass);
+    write_u16(&mut buf[length + 1..], question.qtype);
+    write_u16(&mut buf[length + 3..], question.qclass);
 
     length + 5
 }
@@ -792,68 +802,72 @@ fn write_question(buf: &mut [u8], question: &Question) ->usize {
 fn create_request_buf(buf: &mut [u8], question: &Question) -> usize {
     let header = create_header();
     let header_length = write_header(buf, &header);
-    let length = write_question(&mut buf[header_length ..], question);
+    let length = write_question(&mut buf[header_length..], question);
 
     header_length + length
 }
 
 /// # Errors
-/// 
+///
 /// Will return `Err` if cannot send or receive message on a socket.
 pub fn resolv(request: Request) -> Result<Message, Error> {
-    let question = Question{
-        qname: request.qname, 
+    let question = Question {
+        qname: request.qname,
         qtype: request.type_,
         qclass: dns_class_to_u16(request.class.as_str()),
     };
     let mut buf = [0; 2048];
-    let length =  create_request_buf(buf.as_mut_slice(), &question);
+    let length = create_request_buf(buf.as_mut_slice(), &question);
 
     let result = UdpSocket::bind("[::]:0");
     let socket: UdpSocket = match result {
         Ok(s) => s,
-        Err(e) => return Err(e)
+        Err(e) => return Err(e),
     };
 
-    let send_buf: &[u8] = &buf[0 .. length];
-    let result = socket.send_to(send_buf, request.server + ":" + request.port.to_string().as_str());
+    let send_buf: &[u8] = &buf[0..length];
+    let result = socket.send_to(
+        send_buf,
+        request.server + ":" + request.port.to_string().as_str(),
+    );
     match result {
-        Ok(_) => {},
-        Err(e) => return Err(e)
-    }    
+        Ok(_) => {}
+        Err(e) => return Err(e),
+    }
     let mut buf2 = [0; 2048];
-	let result = socket.recv_from(&mut buf2);
+    let result = socket.recv_from(&mut buf2);
 
     match result {
-        Ok(_) => {},
-        Err(e) => return Err(e)
-    }   
+        Ok(_) => {}
+        Err(e) => return Err(e),
+    }
     Ok(get_message(&buf2))
 }
 
-fn get_flags(header:&Header) -> u16 {
+fn get_flags(header: &Header) -> u16 {
     (u16::from(header.qr & 1) << 15) + (u16::from(header.rd & 1) << 8)
 }
 
 fn write_u16(buf: &mut [u8], value: u16) {
     buf[0] = ((value & 0xFF00) >> 8) as u8;
     buf[1] = (value & 0xFF) as u8;
-} 
+}
 
 pub fn print_message(message: &Message) {
     {
         println!("header:");
         print_header(&message.header);
-    
+
         println!("\nquestions:");
         for question in &message.questions {
             println!(
                 "{}\t\t{}\t{}",
                 question.qname,
                 u16_to_dns_class(question.qclass),
-                u16_to_dns_type(question.qtype));
+                u16_to_dns_type(question.qtype)
+            );
         }
-        
+
         println!("\nanswers:");
         for answer in &message.answers {
             print_resource_record(answer);
@@ -871,8 +885,7 @@ pub fn print_message(message: &Message) {
     }
 }
 
-fn print_header(header: &Header)
-{
+fn print_header(header: &Header) {
     println!(
         "id: {}\nresponse: {}\nopcode: {}\nauthoritative: {}\ntruncated: {}\nrecursion desired: {}\nrecursion available: {}\nreserved: {}\nrcode: {}\nquestion: {}\nanswer: {}\nauthority: {}\nadditional: {}\n",
         header.id,

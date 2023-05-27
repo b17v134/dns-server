@@ -1,7 +1,7 @@
 extern crate clap;
 extern crate resolve_dns;
 
-use clap::{ValueEnum, Parser};
+use clap::{Parser, ValueEnum};
 
 fn default_address() -> String {
     "127.0.0.1".to_string()
@@ -9,13 +9,13 @@ fn default_address() -> String {
 
 #[derive(ValueEnum, Clone, Debug)]
 enum ArgProtocol {
-   Https,
-   Tcp,
-   Tls,
-   Udp,
+    Https,
+    Tcp,
+    Tls,
+    Udp,
 }
 
-fn arg_protocol_as_protocol(protocol: &ArgProtocol) ->resolve_dns::Protocol {
+fn arg_protocol_as_protocol(protocol: &ArgProtocol) -> resolve_dns::Protocol {
     match protocol {
         ArgProtocol::Https => resolve_dns::Protocol::Https,
         ArgProtocol::Tcp => resolve_dns::Protocol::Tcp,
@@ -57,7 +57,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let request = resolve_dns::Request{
+    let request = resolve_dns::Request {
         server: args.server,
         port: args.port,
         protocol: arg_protocol_as_protocol(&args.protocol),
@@ -67,13 +67,10 @@ fn main() {
     };
     let result = resolve_dns::resolv(request);
     match result {
-        Ok(message) => {
-            match args.output_format {
-                OutputFormat::Json => resolve_dns::print_json(&message),
-                OutputFormat::Plain =>  resolve_dns::print_message(&message),
-            }
+        Ok(message) => match args.output_format {
+            OutputFormat::Json => resolve_dns::print_json(&message),
+            OutputFormat::Plain => resolve_dns::print_message(&message),
         },
-        Err(e) => println!("{e}")
-        
+        Err(e) => println!("{e}"),
     }
 }
