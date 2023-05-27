@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: clippy
-      run: cargo clippy --all-features --tests -- -Dclippy::all -Dclippy::pedantic -D warnings
+      run: make clippy
     - name: Build
       run: cargo build --verbose
     - name: Run tests

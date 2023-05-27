@@ -67,7 +67,12 @@ fn main() {
     };
     let result = resolve_dns::resolv(request);
     match result {
-        Ok(message) => resolve_dns::print_message(&message),
+        Ok(message) => {
+            match args.output_format {
+                OutputFormat::Json => resolve_dns::print_json(&message),
+                OutputFormat::Plain =>  resolve_dns::print_message(&message),
+            }
+        },
         Err(e) => println!("{e}")
         
     }

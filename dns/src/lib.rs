@@ -1,6 +1,9 @@
 extern crate rand;
+extern crate serde;
+extern crate serde_json;
 
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use std::io::Error;
 use std::net::{Ipv6Addr, UdpSocket};
 
@@ -420,6 +423,7 @@ pub fn u16_to_dns_class(v: u16) -> &'static str {
 }
 
 // https://www.rfc-editor.org/rfc/rfc1035 4.1.1
+#[derive(Serialize, Deserialize)]
 pub struct Header {
     // Identifier.
     pub id: u16,
@@ -462,6 +466,7 @@ pub struct Header {
 }
 
 // https://www.rfc-editor.org/rfc/rfc1035 4.1.2
+#[derive(Serialize, Deserialize)]
 pub struct Question {
     pub qname: String,
     pub qtype: u16,
@@ -469,8 +474,10 @@ pub struct Question {
 }
 
 // https://www.rfc-editor.org/rfc/rfc1035 4.1.3
+#[derive(Serialize, Deserialize)]
 pub struct ResourceRecord {
     pub name: String,
+    #[serde(rename = "type")]
     pub type_: u16,
     pub class: u16,
     pub ttl: u32,
@@ -478,6 +485,7 @@ pub struct ResourceRecord {
     pub rdata: String,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Message {
     pub header: Header,
     pub questions: Vec<Question>,
@@ -891,4 +899,13 @@ fn print_resource_record(resource_record: &ResourceRecord) {
         u16_to_dns_type(resource_record.type_),
         resource_record.rdata,
     );
+}
+
+pub fn print_json(message: &Message) {
+    let result = serde_json::to_string_pretty(message);
+
+    match result {
+        Ok(str) => println!("{str}"),
+        Err(e) => println!("{e}"),
+    };
 }
