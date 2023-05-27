@@ -12,6 +12,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: fmt-check
+      run: make fmt-check
     - name: clippy
       run: make clippy
     - name: Build
