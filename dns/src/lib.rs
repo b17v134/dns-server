@@ -551,6 +551,72 @@ pub struct Message {
     pub additional_records: Vec<ResourceRecord>,
 }
 
+pub enum OutputFormat {
+    Json,
+    Plain,
+    Yaml,
+}
+
+impl Message {
+    pub fn print(&self, output_format: &OutputFormat) {
+        match output_format {
+            OutputFormat::Plain => self.print_message(),
+            OutputFormat::Json => self.print_json(),
+            OutputFormat::Yaml => self.print_yaml(),
+        }
+    }
+
+    fn print_message(&self) {
+        {
+            println!("header:");
+            print_header(&self.header);
+
+            println!("\nquestions:");
+            for question in &self.questions {
+                println!(
+                    "{}\t\t{}\t{}",
+                    question.qname,
+                    u16_to_dns_class(question.qclass),
+                    u16_to_dns_type(question.qtype)
+                );
+            }
+
+            println!("\nanswers:");
+            for answer in &self.answers {
+                print_resource_record(answer);
+            }
+
+            println!("\nauthority records:");
+            for authority_record in &self.authority_records {
+                print_resource_record(authority_record);
+            }
+
+            println!("\nadditional records:");
+            for additional_record in &self.additional_records {
+                print_resource_record(additional_record);
+            }
+        }
+    }
+
+    fn print_json(&self) {
+        let result = serde_json::to_string_pretty(&self);
+
+        match result {
+            Ok(str) => println!("{str}"),
+            Err(e) => println!("{e}"),
+        };
+    }
+
+    fn print_yaml(&self) {
+        let result = serde_yaml::to_string(&self);
+
+        match result {
+            Ok(str) => println!("{str}"),
+            Err(e) => println!("{e}"),
+        };
+    }
+}
+
 pub enum Protocol {
     Https,
     Tcp,
@@ -930,38 +996,6 @@ fn write_u16(buf: &mut [u8], value: u16) {
     buf[1] = (value & 0xFF) as u8;
 }
 
-pub fn print_message(message: &Message) {
-    {
-        println!("header:");
-        print_header(&message.header);
-
-        println!("\nquestions:");
-        for question in &message.questions {
-            println!(
-                "{}\t\t{}\t{}",
-                question.qname,
-                u16_to_dns_class(question.qclass),
-                u16_to_dns_type(question.qtype)
-            );
-        }
-
-        println!("\nanswers:");
-        for answer in &message.answers {
-            print_resource_record(answer);
-        }
-
-        println!("\nauthority records:");
-        for authority_record in &message.authority_records {
-            print_resource_record(authority_record);
-        }
-
-        println!("\nadditional records:");
-        for additional_record in &message.additional_records {
-            print_resource_record(additional_record);
-        }
-    }
-}
-
 fn print_header(header: &Header) {
     println!(
         "id: {}\nresponse: {}\nopcode: {}\nauthoritative: {}\ntruncated: {}\nrecursion desired: {}\nrecursion available: {}\nreserved: {}\nrcode: {}\nquestion: {}\nanswer: {}\nauthority: {}\nadditional: {}\n",
@@ -989,22 +1023,4 @@ fn print_resource_record(resource_record: &ResourceRecord) {
         u16_to_dns_type(resource_record.type_),
         resource_record.rdata,
     );
-}
-
-pub fn print_json(message: &Message) {
-    let result = serde_json::to_string_pretty(message);
-
-    match result {
-        Ok(str) => println!("{str}"),
-        Err(e) => println!("{e}"),
-    };
-}
-
-pub fn print_yaml(message: &Message) {
-    let result = serde_yaml::to_string(message);
-
-    match result {
-        Ok(str) => println!("{str}"),
-        Err(e) => println!("{e}"),
-    };
 }
