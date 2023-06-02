@@ -1,0 +1,28 @@
+$ORIGIN example.test-bind.
+$TTL 300
+
+@	IN	SOA	ns.example.test-bind.	mail.example.test-bind.	( 20230409 604800 86400 86400 86400 )
+
+@	IN	NS	ns
+@	IN	HINFO	"i686" "unix"
+@	IN	A	10.23.0.7
+
+@   IN  AAAA    fde3:b2a:7ba2:f133:e679:29a8:3e53:f438
+@   IN  AAAA    fde3:b2a:7ba2:f133:e679:29a8:3e53:f439
+@   IN  AAAA    fde3:b2a:7ba2:f133:e679:29a8:3e53:f43a
+@   IN  AAAA    fde3:b2a:7ba2:f133:e679:29a8:3e53:f43b
+
+ns	IN	A	10.23.0.7
+
+test	IN	DNAME	foo
+
+a.foo	IN	A	10.23.0.8
+b.foo	IN	A	10.23.0.9
+
+@   IN  MX  1   mail1
+@   IN  MX  5   mail5
+@   IN  MX  10  mail10
+
+mail1   IN  A   10.23.0.7
+mail5   IN  A   10.23.0.8
+mail10  IN  A   10.23.0.9

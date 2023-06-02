@@ -4,7 +4,7 @@ extern crate serde_json;
 extern crate serde_yaml;
 
 use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use std::io::Error;
 use std::net::{Ipv6Addr, UdpSocket};
 
@@ -467,23 +467,79 @@ pub struct Header {
 }
 
 // https://www.rfc-editor.org/rfc/rfc1035 4.1.2
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct Question {
     pub qname: String,
     pub qtype: u16,
     pub qclass: u16,
 }
 
+impl serde::Serialize for Question {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        SerdeQuestion::from(self).serialize(s)
+    }
+}
+#[derive(Debug, Serialize)]
+pub struct SerdeQuestion {
+    pub name: String,
+    pub qtype: String,
+    pub qclass: String,
+}
+
+impl<'a> From<&'a Question> for SerdeQuestion {
+    fn from(question: &'a Question) -> Self {
+        Self {
+            name: String::from(question.qname.as_str()),
+            qtype: u16_to_dns_type(question.qtype).to_string(),
+            qclass: u16_to_dns_class(question.qclass).to_string(),
+        }
+    }
+}
+
 // https://www.rfc-editor.org/rfc/rfc1035 4.1.3
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct ResourceRecord {
     pub name: String,
     #[serde(rename = "type")]
     pub type_: u16,
     pub class: u16,
     pub ttl: u32,
+    #[serde(skip)]
     pub rdlength: u16,
     pub rdata: String,
+}
+
+impl serde::Serialize for ResourceRecord {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        SerdeResourceRecord::from(self).serialize(s)
+    }
+}
+#[derive(Debug, Serialize)]
+pub struct SerdeResourceRecord {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub type_: String,
+    pub class: String,
+    pub ttl: u32,
+    pub rdata: String,
+}
+
+impl<'a> From<&'a ResourceRecord> for SerdeResourceRecord {
+    fn from(resource_record: &'a ResourceRecord) -> Self {
+        Self {
+            name: String::from(resource_record.name.as_str()),
+            type_: u16_to_dns_type(resource_record.type_).to_string(),
+            class: u16_to_dns_class(resource_record.class).to_string(),
+            ttl: resource_record.ttl,
+            rdata: String::from(resource_record.rdata.as_str()),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -502,9 +558,9 @@ pub enum Protocol {
     Udp,
 }
 
-/*fn read_u8(buf: &Vec<u8>, pos: usize) -> u8 {
-    return buf[pos];
-}*/
+fn read_u8(buf: &[u8], pos: usize) -> u8 {
+    buf[pos]
+}
 
 fn read_u16(buf: &[u8], pos: usize) -> u16 {
     u16::from(buf[pos]) * 0x100 + u16::from(buf[pos + 1])
@@ -536,6 +592,14 @@ fn read_header(buf: &[u8]) -> Header {
         nscount: read_u16(buf, 8),
         arcount: read_u16(buf, 10),
     }
+}
+
+fn read_string(buf: &[u8], pos: usize, value: &mut String) -> usize {
+    let size: usize = read_u8(buf, pos) as usize;
+    for i in 1..=size {
+        value.push(char::from(buf[pos + i]));
+    }
+    pos + size + 1
 }
 
 fn read_qname(buf: &[u8], pos: usize, qname: &mut String) -> usize {
@@ -618,6 +682,15 @@ fn read_ipv6(buf: &[u8], pos: usize) -> String {
     addr.to_string()
 }
 
+fn read_hinfo(buf: &[u8], pos: usize) -> String {
+    let mut cpu = String::new();
+    let cur_pos = read_string(buf, pos, &mut cpu);
+
+    let mut os = String::new();
+    read_string(buf, cur_pos, &mut os);
+    format!("\"{cpu}\" \"{os}\"")
+}
+
 fn read_mx(buf: &[u8], pos: usize) -> String {
     let preference = read_u16(buf, pos);
     let mut qname = String::new();
@@ -654,6 +727,9 @@ fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
         }
         DNS_TYPE_AAAA => {
             rdata = read_ipv6(buf, tmp_current_pos + 11);
+        }
+        DNS_TYPE_HINFO => {
+            rdata = read_hinfo(buf, tmp_current_pos + 11);
         }
         DNS_TYPE_MX => {
             rdata = read_mx(buf, tmp_current_pos + 11);
