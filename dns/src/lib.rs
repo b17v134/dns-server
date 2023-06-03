@@ -49,22 +49,22 @@ impl Message {
 
             println!("\nquestions:");
             for question in &self.questions {
-                println!("{}", question);
+                println!("{question}");
             }
 
             println!("\nanswers:");
             for answer in &self.answers {
-                println!("{}", answer);
+                println!("{answer}");
             }
 
             println!("\nauthority records:");
             for authority_record in &self.authority_records {
-                println!("{}", authority_record);
+                println!("{authority_record}");
             }
 
             println!("\nadditional records:");
             for additional_record in &self.additional_records {
-                println!("{}", additional_record);
+                println!("{additional_record}");
             }
         }
     }
