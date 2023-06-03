@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize, Serializer};
+use std::fmt;
 
 use crate::classes::u16_to_dns_class;
 use crate::types::u16_to_dns_type;
@@ -9,6 +10,18 @@ pub struct Question {
     pub qname: String,
     pub qtype: u16,
     pub qclass: u16,
+}
+
+impl fmt::Display for Question {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}\t\t{}\t{}",
+            self.qname,
+            u16_to_dns_class(self.qclass),
+            u16_to_dns_type(self.qtype),
+        )
+    }
 }
 
 impl serde::Serialize for Question {

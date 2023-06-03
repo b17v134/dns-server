@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize, Serializer};
+use std::fmt;
 
 use crate::classes::u16_to_dns_class;
 use crate::types::u16_to_dns_type;
@@ -14,6 +15,20 @@ pub struct ResourceRecord {
     #[serde(skip)]
     pub rdlength: u16,
     pub rdata: String,
+}
+
+impl fmt::Display for ResourceRecord {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}\t{}\t{}\t{}\t{}",
+            self.name,
+            self.ttl,
+            u16_to_dns_class(self.class),
+            u16_to_dns_type(self.type_),
+            self.rdata,
+        )
+    }
 }
 
 impl serde::Serialize for ResourceRecord {

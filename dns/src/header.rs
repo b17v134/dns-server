@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 // https://www.rfc-editor.org/rfc/rfc1035 4.1.1
 #[derive(Serialize, Deserialize)]
@@ -41,4 +42,26 @@ pub struct Header {
 
     // Number of resource records in the additional records section.
     pub arcount: u16,
+}
+
+impl fmt::Display for Header {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "id: {}\nresponse: {}\nopcode: {}\nauthoritative: {}\ntruncated: {}\nrecursion desired: {}\nrecursion available: {}\nreserved: {}\nrcode: {}\nquestion: {}\nanswer: {}\nauthority: {}\nadditional: {}",
+            self.id,
+            self.qr,
+            self.opcode,
+            self.aa,
+            self.tc,
+            self.rd,
+            self.ra,
+            self.z,
+            self.rcode,
+            self.qdcount,
+            self.ancount,
+            self.nscount,
+            self.arcount,
+        )
+    }
 }

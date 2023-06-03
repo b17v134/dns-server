@@ -9,18 +9,20 @@ use std::io::Error;
 use std::net::{Ipv6Addr, UdpSocket};
 
 mod classes;
-mod types;
-
 mod header;
+mod outputformat;
+mod protocol;
 mod question;
 mod resourcerecord;
+mod types;
 
 pub use classes::*;
-pub use types::*;
-
 pub use header::*;
+pub use outputformat::*;
+pub use protocol::*;
 pub use question::*;
 pub use resourcerecord::*;
+pub use types::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct Message {
@@ -29,12 +31,6 @@ pub struct Message {
     pub answers: Vec<ResourceRecord>,
     pub authority_records: Vec<ResourceRecord>,
     pub additional_records: Vec<ResourceRecord>,
-}
-
-pub enum OutputFormat {
-    Json,
-    Plain,
-    Yaml,
 }
 
 impl Message {
@@ -49,31 +45,26 @@ impl Message {
     fn print_message(&self) {
         {
             println!("header:");
-            print_header(&self.header);
+            println!("{}", self.header);
 
             println!("\nquestions:");
             for question in &self.questions {
-                println!(
-                    "{}\t\t{}\t{}",
-                    question.qname,
-                    u16_to_dns_class(question.qclass),
-                    u16_to_dns_type(question.qtype)
-                );
+                println!("{}", question);
             }
 
             println!("\nanswers:");
             for answer in &self.answers {
-                print_resource_record(answer);
+                println!("{}", answer);
             }
 
             println!("\nauthority records:");
             for authority_record in &self.authority_records {
-                print_resource_record(authority_record);
+                println!("{}", authority_record);
             }
 
             println!("\nadditional records:");
             for additional_record in &self.additional_records {
-                print_resource_record(additional_record);
+                println!("{}", additional_record);
             }
         }
     }
@@ -95,13 +86,6 @@ impl Message {
             Err(e) => println!("{e}"),
         };
     }
-}
-
-pub enum Protocol {
-    Https,
-    Tcp,
-    Tls,
-    Udp,
 }
 
 fn read_u8(buf: &[u8], pos: usize) -> u8 {
@@ -474,33 +458,4 @@ fn get_flags(header: &Header) -> u16 {
 fn write_u16(buf: &mut [u8], value: u16) {
     buf[0] = ((value & 0xFF00) >> 8) as u8;
     buf[1] = (value & 0xFF) as u8;
-}
-
-fn print_header(header: &Header) {
-    println!(
-        "id: {}\nresponse: {}\nopcode: {}\nauthoritative: {}\ntruncated: {}\nrecursion desired: {}\nrecursion available: {}\nreserved: {}\nrcode: {}\nquestion: {}\nanswer: {}\nauthority: {}\nadditional: {}\n",
-        header.id,
-        header.qr,
-        header.opcode,
-        header.aa,
-        header.tc,
-        header.rd,
-        header.ra,
-        header.z,
-        header.rcode,
-        header.qdcount,
-        header.ancount,
-        header.nscount,
-        header.arcount);
-}
-
-fn print_resource_record(resource_record: &ResourceRecord) {
-    println!(
-        "{}\t{}\t{}\t{}\t{}",
-        resource_record.name,
-        resource_record.ttl,
-        u16_to_dns_class(resource_record.class),
-        u16_to_dns_type(resource_record.type_),
-        resource_record.rdata,
-    );
 }
