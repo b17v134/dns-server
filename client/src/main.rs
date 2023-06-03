@@ -31,6 +31,14 @@ enum OutputFormat {
     Yaml,
 }
 
+fn arg_output_format_as_output_format(output_format: &OutputFormat) -> &resolve_dns::OutputFormat {
+    match output_format {
+        OutputFormat::Json => &resolve_dns::OutputFormat::Json,
+        OutputFormat::Plain => &resolve_dns::OutputFormat::Plain,
+        OutputFormat::Yaml => &resolve_dns::OutputFormat::Yaml,
+    }
+}
+
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -68,11 +76,7 @@ fn main() {
     };
     let result = resolve_dns::resolv(request);
     match result {
-        Ok(message) => match args.output_format {
-            OutputFormat::Json => resolve_dns::print_json(&message),
-            OutputFormat::Plain => resolve_dns::print_message(&message),
-            OutputFormat::Yaml => resolve_dns::print_yaml(&message),
-        },
+        Ok(message) => message.print(arg_output_format_as_output_format(&args.output_format)),
         Err(e) => println!("{e}"),
     }
 }

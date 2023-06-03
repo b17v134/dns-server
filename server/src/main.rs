@@ -7,10 +7,10 @@ use std::{
     process::exit,
 };
 
-use resolve_dns::get_message;
+use resolve_dns::Message;
 
 fn handle_client(_: &SocketAddr, _: usize, buf: &[u8; 4096]) {
-    let message = get_message(&Vec::from(buf.as_slice()));
+    let message = Message::from(&Vec::from(buf.as_slice()));
     println!("{}", message.header.id);
 }
 
