@@ -4,9 +4,9 @@ use std::net::UdpSocket;
 
 use crate::classes::dns_class_to_u16;
 use crate::header::Header;
-use crate::message::*;
-use crate::question::*;
-use crate::request::*;
+use crate::message::Message;
+use crate::question::Question;
+use crate::request::Request;
 
 /// # Errors
 ///
@@ -42,7 +42,7 @@ pub fn resolv(request: Request) -> Result<Message, Error> {
         Ok(_) => {}
         Err(e) => return Err(e),
     }
-    Ok(get_message(&buf2))
+    Ok(Message::from(&buf2))
 }
 
 fn create_request_buf(buf: &mut [u8], question: &Question) -> usize {

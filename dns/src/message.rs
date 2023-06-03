@@ -5,7 +5,7 @@ use crate::header::Header;
 use crate::outputformat::OutputFormat;
 use crate::question::Question;
 use crate::resourcerecord::ResourceRecord;
-use crate::types::*;
+use crate::types::{DNS_TYPE_A, DNS_TYPE_AAAA, DNS_TYPE_HINFO, DNS_TYPE_MX, DNS_TYPE_SOA};
 
 #[derive(Serialize, Deserialize)]
 pub struct Message {
@@ -69,48 +69,48 @@ impl Message {
             Err(e) => println!("{e}"),
         };
     }
-}
 
-#[must_use]
-pub fn get_message(buf: &[u8]) -> Message {
-    let header = read_header(buf);
+    #[must_use]
+    pub fn from(buf: &[u8]) -> Message {
+        let header = read_header(buf);
 
-    let mut pos = 12;
+        let mut pos = 12;
 
-    let mut questions: Vec<Question> = Vec::new();
-    for _ in 0..header.qdcount {
-        let question: Question;
-        (question, pos) = read_question(buf, pos);
-        questions.push(question);
-    }
+        let mut questions: Vec<Question> = Vec::new();
+        for _ in 0..header.qdcount {
+            let question: Question;
+            (question, pos) = read_question(buf, pos);
+            questions.push(question);
+        }
 
-    let mut answers: Vec<ResourceRecord> = Vec::new();
-    for _ in 0..header.ancount {
-        let resource_record: ResourceRecord;
-        (resource_record, pos) = read_resource_record(buf, pos);
-        answers.push(resource_record);
-    }
+        let mut answers: Vec<ResourceRecord> = Vec::new();
+        for _ in 0..header.ancount {
+            let resource_record: ResourceRecord;
+            (resource_record, pos) = read_resource_record(buf, pos);
+            answers.push(resource_record);
+        }
 
-    let mut authority_records: Vec<ResourceRecord> = Vec::new();
-    for _ in 0..header.nscount {
-        let resource_record: ResourceRecord;
-        (resource_record, pos) = read_resource_record(buf, pos);
-        authority_records.push(resource_record);
-    }
+        let mut authority_records: Vec<ResourceRecord> = Vec::new();
+        for _ in 0..header.nscount {
+            let resource_record: ResourceRecord;
+            (resource_record, pos) = read_resource_record(buf, pos);
+            authority_records.push(resource_record);
+        }
 
-    let mut additional_records: Vec<ResourceRecord> = Vec::new();
-    for _ in 0..header.arcount {
-        let resource_record: ResourceRecord;
-        (resource_record, pos) = read_resource_record(buf, pos);
-        additional_records.push(resource_record);
-    }
+        let mut additional_records: Vec<ResourceRecord> = Vec::new();
+        for _ in 0..header.arcount {
+            let resource_record: ResourceRecord;
+            (resource_record, pos) = read_resource_record(buf, pos);
+            additional_records.push(resource_record);
+        }
 
-    Message {
-        header,
-        questions,
-        answers,
-        authority_records,
-        additional_records,
+        Message {
+            header,
+            questions,
+            answers,
+            authority_records,
+            additional_records,
+        }
     }
 }
 
