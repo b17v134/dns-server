@@ -1,3 +1,4 @@
+extern crate clap;
 extern crate rand;
 extern crate serde;
 extern crate serde_json;
