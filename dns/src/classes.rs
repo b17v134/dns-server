@@ -27,3 +27,26 @@ pub fn u16_to_dns_class(v: u16) -> &'static str {
         _ => DNS_STR_CLASS_ERROR,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{dns_class_to_u16, u16_to_dns_class};
+
+    #[test]
+    fn test_dns_class_to_u16() {
+        assert_eq!(dns_class_to_u16("ERROR"), 0);
+        assert_eq!(dns_class_to_u16("IN"), 1);
+        assert_eq!(dns_class_to_u16("CH"), 3);
+        assert_eq!(dns_class_to_u16("HS"), 4);
+        assert_eq!(dns_class_to_u16("foo"), 0);
+    }
+
+    #[test]
+    fn test_u16_to_dns_class() {
+        assert_eq!(u16_to_dns_class(0), "ERROR");
+        assert_eq!(u16_to_dns_class(1), "IN");
+        assert_eq!(u16_to_dns_class(3), "CH");
+        assert_eq!(u16_to_dns_class(4), "HS");
+        assert_eq!(u16_to_dns_class(100), "ERROR");
+    }
+}
