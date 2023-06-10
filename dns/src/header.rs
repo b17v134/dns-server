@@ -65,3 +65,42 @@ impl fmt::Display for Header {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::Header;
+
+    #[test]
+    fn test_header_display() {
+        let header = Header {
+            id: 24611,
+            qr: 1,
+            opcode: 0,
+            aa: 0,
+            tc: 0,
+            rd: 1,
+            ra: 1,
+            z: 0,
+            rcode: 0,
+            qdcount: 1,
+            ancount: 8,
+            nscount: 0,
+            arcount: 1,
+        };
+
+        let str_result = "id: 24611
+response: 1
+opcode: 0
+authoritative: 0
+truncated: 0
+recursion desired: 1
+recursion available: 1
+reserved: 0
+rcode: 0
+question: 1
+answer: 8
+authority: 0
+additional: 1";
+        assert_eq!(header.to_string(), str_result);
+    }
+}
