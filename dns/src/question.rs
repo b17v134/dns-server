@@ -86,6 +86,31 @@ mod tests {
     }
 
     #[test]
+    fn test_question_to_serialize() {
+        let qname = "example.test-bind.".to_string();
+
+        let question = Question {
+            qname,
+            qclass: DNS_CLASS_IN,
+            qtype: DNS_TYPE_A,
+        };
+
+        let result = serde_json::to_string_pretty(&question);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            "{\n  \"name\": \"example.test-bind.\",\n  \"qtype\": \"A\",\n  \"qclass\": \"IN\"\n}"
+        );
+
+        let result = serde_yaml::to_string(&question);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            "name: example.test-bind.\nqtype: A\nqclass: IN\n"
+        );
+    }
+
+    #[test]
     fn test_questionserializer_from() {
         let qname = "example.test-bind.".to_string();
 
