@@ -96,6 +96,7 @@ pub const DNS_TYPE_AMTREPLAY: u16 = 260;
 pub const DNS_TYPE_TA: u16 = 32768;
 pub const DNS_TYPE_DLV: u16 = 32769;
 
+pub const DNS_STR_TYPE_ERROR: &str = "ERROR";
 pub const DNS_STR_TYPE_A: &str = "A";
 pub const DNS_STR_TYPE_NS: &str = "NS";
 pub const DNS_STR_TYPE_MD: &str = "MD";
@@ -380,6 +381,30 @@ pub fn u16_to_dns_type(v: u16) -> &'static str {
         DNS_TYPE_AMTREPLAY => DNS_STR_TYPE_AMTREPLAY,
         DNS_TYPE_TA => DNS_STR_TYPE_TA,
         DNS_TYPE_DLV => DNS_STR_TYPE_DLV,
-        _ => "ERROR",
+        _ => DNS_STR_TYPE_ERROR,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        dns_type_to_u16, u16_to_dns_type, DNS_STR_TYPE_A, DNS_STR_TYPE_AAAA, DNS_STR_TYPE_ERROR,
+        DNS_STR_TYPE_MX, DNS_TYPE_A, DNS_TYPE_AAAA, DNS_TYPE_ERROR, DNS_TYPE_MX,
+    };
+
+    #[test]
+    fn test_dns_type_to_u16() {
+        assert_eq!(dns_type_to_u16(DNS_STR_TYPE_ERROR), DNS_TYPE_ERROR);
+        assert_eq!(dns_type_to_u16(DNS_STR_TYPE_A), DNS_TYPE_A);
+        assert_eq!(dns_type_to_u16(DNS_STR_TYPE_AAAA), DNS_TYPE_AAAA);
+        assert_eq!(dns_type_to_u16("foo"), DNS_TYPE_ERROR);
+    }
+
+    #[test]
+    fn test_u16_to_dns_type() {
+        assert_eq!(u16_to_dns_type(DNS_TYPE_ERROR), DNS_STR_TYPE_ERROR);
+        assert_eq!(u16_to_dns_type(DNS_TYPE_MX), DNS_STR_TYPE_MX);
+        assert_eq!(u16_to_dns_type(DNS_TYPE_AAAA), DNS_STR_TYPE_AAAA);
+        assert_eq!(u16_to_dns_type(34324), DNS_STR_TYPE_ERROR);
     }
 }
