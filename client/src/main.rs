@@ -1,6 +1,8 @@
 extern crate clap;
 extern crate resolve_dns;
 
+use std::process;
+
 use clap::Parser;
 
 fn default_address() -> String {
@@ -34,6 +36,11 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
+    let type_ = resolve_dns::dns_type_to_u16(&args.type_);
+    if type_ == resolve_dns::DNS_TYPE_ERROR {
+        eprintln!("Incorrect type: {}", args.type_);
+        process::exit(1);
+    }
     let request = resolve_dns::Request {
         server: args.server,
         port: args.port,

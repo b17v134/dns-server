@@ -49,3 +49,102 @@ impl<'a> From<&'a Question> for QuestionSerializer {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{Question, DNS_CLASS_IN, DNS_TYPE_A, DNS_TYPE_AAAA};
+
+    use super::QuestionSerializer;
+
+    #[test]
+    fn test_question_display() {
+        let qname = "example.test-bind.".to_string();
+
+        let question = Question {
+            qname: qname.to_string(),
+            qclass: DNS_CLASS_IN,
+            qtype: DNS_TYPE_A,
+        };
+
+        assert_eq!(question.to_string(), "example.test-bind.\t\tIN\tA");
+
+        let question = Question {
+            qname: qname.to_string(),
+            qclass: DNS_CLASS_IN,
+            qtype: 8888,
+        };
+
+        assert_eq!(question.to_string(), "example.test-bind.\t\tIN\tERROR");
+
+        let question = Question {
+            qname,
+            qclass: 234,
+            qtype: DNS_TYPE_AAAA,
+        };
+
+        assert_eq!(question.to_string(), "example.test-bind.\t\tERROR\tAAAA");
+    }
+
+    #[test]
+    fn test_question_to_serialize() {
+        let qname = "example.test-bind.".to_string();
+
+        let question = Question {
+            qname,
+            qclass: DNS_CLASS_IN,
+            qtype: DNS_TYPE_A,
+        };
+
+        let result = serde_json::to_string_pretty(&question);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            "{\n  \"name\": \"example.test-bind.\",\n  \"qtype\": \"A\",\n  \"qclass\": \"IN\"\n}"
+        );
+
+        let result = serde_yaml::to_string(&question);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            "name: example.test-bind.\nqtype: A\nqclass: IN\n"
+        );
+    }
+
+    #[test]
+    fn test_questionserializer_from() {
+        let qname = "example.test-bind.".to_string();
+
+        let question = Question {
+            qname: qname.to_string(),
+            qtype: DNS_TYPE_A,
+            qclass: DNS_CLASS_IN,
+        };
+
+        let question_serializer = QuestionSerializer::from(&question);
+        assert_eq!(question_serializer.name, question.qname);
+        assert_eq!(question_serializer.qtype, "A");
+        assert_eq!(question_serializer.qclass, "IN");
+
+        let question = Question {
+            qname: qname.to_string(),
+            qtype: DNS_TYPE_A,
+            qclass: 234,
+        };
+
+        let question_serializer = QuestionSerializer::from(&question);
+        assert_eq!(question_serializer.name, question.qname);
+        assert_eq!(question_serializer.qtype, "A");
+        assert_eq!(question_serializer.qclass, "ERROR");
+
+        let question = Question {
+            qname,
+            qtype: 8888,
+            qclass: DNS_CLASS_IN,
+        };
+
+        let question_serializer = QuestionSerializer::from(&question);
+        assert_eq!(question_serializer.name, question.qname);
+        assert_eq!(question_serializer.qtype, "ERROR");
+        assert_eq!(question_serializer.qclass, "IN");
+    }
+}
