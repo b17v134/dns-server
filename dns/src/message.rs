@@ -164,13 +164,13 @@ fn read_qname(buf: &[u8], pos: usize, qname: &mut String) -> usize {
     let mut tmp_pos = pos;
     if buf[pos] == 0 {
         qname.push('.');
-        return pos;
+        return pos + 1;
     }
 
     while buf[tmp_pos] != 0 {
         length = buf[tmp_pos];
         if ((length & (0x3 << 6)) >> 6) == 0x3 {
-            if max_pos < tmp_pos {
+            if max_pos <= tmp_pos {
                 max_pos = tmp_pos + 1;
             }
             tmp_pos = usize::from(read_u16(buf, tmp_pos) - (0x3 << 14));
@@ -203,13 +203,11 @@ fn read_qname(buf: &[u8], pos: usize, qname: &mut String) -> usize {
 fn read_question(buf: &[u8], pos: usize) -> (Question, usize) {
     let mut qname = String::new();
     let current_pos = read_qname(buf, pos, &mut qname);
-
     let q = Question {
         qname,
         qtype: read_u16(buf, current_pos),
         qclass: read_u16(buf, current_pos + 2),
     };
-
     (q, current_pos + 4)
 }
 
@@ -275,38 +273,37 @@ fn read_resource_record(buf: &[u8], pos: usize) -> (ResourceRecord, usize) {
     let mut qname = String::new();
     let mut tmp_current_pos = read_qname(buf, pos, &mut qname);
 
-    let resource_record_type = read_u16(buf, tmp_current_pos + 1);
+    let resource_record_type = read_u16(buf, tmp_current_pos);
     let mut rdata: String = String::new();
     match resource_record_type {
         DNS_TYPE_A => {
-            rdata = read_ipv4(buf, tmp_current_pos + 11);
+            rdata = read_ipv4(buf, tmp_current_pos + 10);
         }
         DNS_TYPE_AAAA => {
-            rdata = read_ipv6(buf, tmp_current_pos + 11);
+            rdata = read_ipv6(buf, tmp_current_pos + 10);
         }
         DNS_TYPE_HINFO => {
-            rdata = read_hinfo(buf, tmp_current_pos + 11);
+            rdata = read_hinfo(buf, tmp_current_pos + 10);
         }
         DNS_TYPE_MX => {
-            rdata = read_mx(buf, tmp_current_pos + 11);
+            rdata = read_mx(buf, tmp_current_pos + 10);
         }
         DNS_TYPE_SOA => {
-            rdata = read_soa(buf, tmp_current_pos + 11);
+            rdata = read_soa(buf, tmp_current_pos + 10);
         }
         _ => {
-            read_qname(buf, tmp_current_pos + 11, &mut rdata);
+            read_qname(buf, tmp_current_pos + 10, &mut rdata);
         }
     }
 
     let resource_record = ResourceRecord {
         name: qname,
         type_: resource_record_type,
-        class: read_u16(buf, tmp_current_pos + 3),
-        ttl: read_u32(buf, tmp_current_pos + 5),
-        rdlength: read_u16(buf, tmp_current_pos + 9),
+        class: read_u16(buf, tmp_current_pos + 2),
+        ttl: read_u32(buf, tmp_current_pos + 4),
+        rdlength: read_u16(buf, tmp_current_pos + 8),
         rdata,
     };
-
-    tmp_current_pos += 11 + usize::from(resource_record.rdlength);
+    tmp_current_pos += 10 + usize::from(resource_record.rdlength);
     (resource_record, tmp_current_pos)
 }
