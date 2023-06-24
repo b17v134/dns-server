@@ -37,3 +37,7 @@ integration-tests:
 	$(MAKE) integration-tests-bind-start
 	ruby integration-tests/tests.rb -v
 	$(MAKE) integration-tests-bind-stop
+
+.PHONY: docker
+docker:
+	podman build -f hack/Dockerfile.alpine -t rust-dev-alpine

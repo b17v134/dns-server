@@ -3,4 +3,4 @@ name = "server"
 version.workspace = true
 
 [dependencies]
-resolve-dns = { workspace = true, path="../dns"}
+resolve-dns = { workspace = true }

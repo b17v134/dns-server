@@ -4,4 +4,4 @@ version.workspace = true
 
 [dependencies]
 clap = { version = "4.3.2", features = ["derive"] }
-resolve-dns = { workspace = true, path="../dns"}
+resolve-dns = { workspace = true }
