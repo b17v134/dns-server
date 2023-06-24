@@ -1,0 +1,8 @@
+FROM docker.io/library/rust:alpine3.18
+
+RUN apk update --no-cache
+
+RUN apk add --no-cache make musl-dev
+
+RUN rustup component add clippy
+RUN rustup component add rustfmt

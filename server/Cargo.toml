@@ -2,8 +2,5 @@
 name = "server"
 version.workspace = true
 
-[[bin]]
-name = "dns-server"
-
 [dependencies]
-resolve-dns = { workspace = true, path="../dns"}
+resolve-dns = { workspace = true }
